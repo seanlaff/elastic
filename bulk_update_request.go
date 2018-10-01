@@ -280,18 +280,33 @@ func (r *BulkUpdateRequest) Source() ([]string, error) {
 		data.Script = script
 	}
 
-	if r.useEasyJSON {
-		// easyjson
-		body, err = data.MarshalJSON()
+	if r.doc != nil {
+		switch t := r.doc.(type) {
+		default:
+			if r.useEasyJSON {
+				// easyjson
+				body, err = data.MarshalJSON()
+			} else {
+				// encoding/json
+				body, err = json.Marshal(data)
+			}
+			body, err := json.Marshal(r.doc)
+			if err != nil {
+				return nil, err
+			}
+			lines[1] = string(body)
+		case json.RawMessage:
+			lines[1] = string(t)
+		case *json.RawMessage:
+			lines[1] = string(*t)
+		case string:
+			lines[1] = t
+		case *string:
+			lines[1] = *t
+		}
 	} else {
-		// encoding/json
-		body, err = json.Marshal(data)
+		lines[1] = "{}"
 	}
-	if err != nil {
-		return nil, err
-	}
-
-	lines[1] = string(body)
 
 	r.source = lines
 	return lines, nil
